@@ -1252,6 +1252,6 @@ setInterval(updateClock, 1000 * 30);
 render();
 barcodeInput.focus();
 
-if ("serviceWorker" in navigator) {
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
   navigator.serviceWorker.register("./service-worker.js").catch(() => {});
 }

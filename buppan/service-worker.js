@@ -5,6 +5,8 @@ const ASSETS = [
   "./styles.css",
   "./app.js",
   "./manifest.webmanifest",
+  "./temple-register-icon.svg",
+  "./omairi-pay-logo.svg",
 ];
 
 self.addEventListener("install", (event) => {
