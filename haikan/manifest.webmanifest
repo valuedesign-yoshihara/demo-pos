@@ -1,0 +1,17 @@
+{
+  "name": "拝観受付レジ WUXGA 10.1インチ 大きめ版",
+  "short_name": "拝観レジ 大きめ",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "landscape-primary",
+  "background_color": "#f4f5f2",
+  "theme_color": "#2e3238",
+  "icons": [
+    {
+      "src": "./temple-register-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

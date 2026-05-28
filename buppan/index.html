@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2e3238" />
+    <title>物販レジ WUXGA 10.1インチ</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="../../temple-register-icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand-mark">
+          <img src="../../omairi-pay-logo.svg" alt="おまいり Pay" />
+        </div>
+        <div class="title-block">
+          <h1>物販レジ</h1>
+          <p>授与所・売店 1</p>
+        </div>
+        <div class="scanner-status" id="scannerStatus">バーコード待機中</div>
+        <div class="opening-alert" id="openingAlert">※レジ元金が登録されていません。</div>
+        <div class="topbar-meta">
+          <div class="weather-selector">
+            <button type="button" class="weather-button" id="weatherButton" aria-expanded="false" aria-haspopup="true">
+              天候：晴れ
+            </button>
+            <div class="weather-menu hidden" id="weatherMenu" aria-label="天候選択"></div>
+          </div>
+          <span id="clock">--/-- --:--</span>
+          <button type="button" class="staff-button" id="staffButton">担当：山田 太郎</button>
+        </div>
+      </header>
+
+      <main class="retail-layout" id="registerScreen">
+        <section class="category-column column-shell" aria-label="分類">
+          <div class="column-heading">
+            <h2>分類</h2>
+          </div>
+          <nav class="category-tabs" id="categoryTabs" aria-label="商品分類"></nav>
+          <div class="side-actions">
+            <button type="button" class="side-action" id="undoButton">取消</button>
+            <button type="button" class="side-action danger" id="clearCart">全取消</button>
+            <button type="button" class="side-action report" id="openClosing">レジ集計</button>
+          </div>
+        </section>
+
+        <section class="product-column column-shell" aria-label="商品入力">
+          <div class="column-heading">
+            <h2>商品入力</h2>
+            <span id="activeCategoryLabel">食品</span>
+          </div>
+
+          <div class="scan-panel">
+            <label class="barcode-field">
+              <svg class="field-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7v10M7 7v10M11 7v10M14 7v10M18 7v10M21 7v10" />
+                <path d="M3 4h18M3 20h18" />
+              </svg>
+              <span class="barcode-label">
+                <strong>バーコード</strong>
+                <small>4桁コード</small>
+              </span>
+              <input id="barcodeInput" type="text" inputmode="numeric" autocomplete="off" placeholder="スキャンまたは4桁コード" />
+            </label>
+            <button type="button" class="scan-button" id="addBarcode">登録</button>
+          </div>
+
+          <div class="mode-row">
+            <div class="service-mode" id="serviceMode" role="tablist" aria-label="税率区分">
+              <button type="button" class="active" data-service="takeout" role="tab" aria-selected="true">持ち帰り</button>
+              <button type="button" data-service="eatin" role="tab" aria-selected="false">イートイン</button>
+            </div>
+            <div class="service-note" id="serviceNote">食品は軽減税率 8% で計算</div>
+          </div>
+
+          <div class="product-context">
+            <span>表示中</span>
+            <strong id="categoryContextLabel">食品</strong>
+            <span>の商品</span>
+          </div>
+
+          <div class="product-grid" id="productGrid" aria-live="polite"></div>
+
+          <div class="ticket-actions" aria-label="券・控え発行">
+            <button type="button" data-ticket-action="tea">お茶券発行</button>
+            <button type="button" data-ticket-action="voucher">引換券発行</button>
+            <button type="button" data-ticket-action="wrap">包装控え</button>
+            <button type="button" data-ticket-action="delivery">配送受付</button>
+          </div>
+        </section>
+
+        <section class="cart-column column-shell" aria-label="登録内容">
+          <div class="column-heading">
+            <h2>登録内容</h2>
+            <span id="cartCount">0点</span>
+          </div>
+          <div class="cart-list" id="cartList"></div>
+            <div class="cart-totals">
+              <div>
+                <span>数量</span>
+                <strong id="itemTotal">0</strong>
+              </div>
+            <div class="tax-total-block">
+              <span>税区分</span>
+              <div class="tax-summary" id="taxSummary">
+                <div><span>8%</span><strong>¥0</strong></div>
+                <div><span>10%</span><strong>¥0</strong></div>
+                <div><span>非課税</span><strong>¥0</strong></div>
+              </div>
+            </div>
+            <div class="grand-total">
+              <span>合計</span>
+              <strong id="grandTotal">¥0</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="payment-column" aria-label="決済">
+          <section class="payment-panel column-shell">
+            <div class="column-heading">
+              <h2>決済</h2>
+              <span id="paymentModeLabel">現金</span>
+            </div>
+            <div class="payment-tabs" id="paymentTabs" role="tablist" aria-label="決済方法">
+              <button type="button" class="active" data-payment="cash" role="tab" aria-selected="true">
+                <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="3" y="6" width="18" height="12" rx="2" />
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M6 9h2M16 15h2" />
+                </svg>
+                <span>現金</span>
+              </button>
+              <button type="button" data-payment="cashless" role="tab" aria-selected="false">
+                <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="3" y="5" width="18" height="14" rx="2" />
+                  <path d="M3 10h18M7 15h4" />
+                </svg>
+                <span>キャッシュレス</span>
+              </button>
+            </div>
+
+            <div class="cash-panel" id="cashPanel">
+              <div class="payment-readouts">
+                <button type="button" class="payment-readout" id="cashEntryButton">
+                  <span>お預り</span>
+                  <strong id="cashReceived">¥0</strong>
+                </button>
+                <div class="payment-readout change">
+                  <span>お釣り</span>
+                  <strong id="changeAmount">¥0</strong>
+                </div>
+              </div>
+              <div class="quick-money">
+                <button type="button" data-cash="exact">ちょうど</button>
+                <button type="button" data-cash-add="1000">+1,000</button>
+                <button type="button" data-cash-add="5000">+5,000</button>
+                <button type="button" data-cash-add="10000">+10,000</button>
+              </div>
+              <div class="money-pad" id="moneyPad" aria-label="金額テンキー">
+                <button type="button" data-digit="7">7</button>
+                <button type="button" data-digit="8">8</button>
+                <button type="button" data-digit="9">9</button>
+                <button type="button" data-digit="4">4</button>
+                <button type="button" data-digit="5">5</button>
+                <button type="button" data-digit="6">6</button>
+                <button type="button" data-digit="1">1</button>
+                <button type="button" data-digit="2">2</button>
+                <button type="button" data-digit="3">3</button>
+                <button type="button" class="clear-key" data-action="clearCash">C</button>
+                <button type="button" data-digit="0">0</button>
+                <button type="button" data-digit="00">00</button>
+              </div>
+            </div>
+
+            <div class="cashless-panel hidden" id="cashlessPanel">
+              <div class="cashless-methods" id="cashlessMethods">
+                <button type="button" class="active" data-cashless="クレジット">クレジット</button>
+                <button type="button" data-cashless="電子マネー">電子マネー</button>
+              </div>
+              <div class="payment-readout cashless-total">
+                <span>決済額</span>
+                <strong id="cashlessTotal">¥0</strong>
+              </div>
+              <button type="button" class="approve-button" id="approveCashless">承認して会計確認</button>
+              <div class="status-line" id="cashlessStatus">未処理</div>
+            </div>
+
+            <button type="button" class="settle-button" id="settleButton">会計確認</button>
+          </section>
+
+          <section class="history-panel column-shell">
+            <div class="column-heading compact">
+              <h2>履歴</h2>
+              <span id="historyCount">0件</span>
+            </div>
+            <div class="history-list" id="historyList"></div>
+          </section>
+        </section>
+      </main>
+
+      <main class="closing-screen hidden" id="closingScreen" aria-label="レジ集計">
+        <section class="closing-top">
+          <div>
+            <h2>レジ集計</h2>
+            <p>販売途中でも現在時点の集計を確認できます</p>
+          </div>
+          <div class="closing-top-actions">
+            <button type="button" class="closing-report-print" id="printClosingReport">レジ締集計表印刷</button>
+            <button type="button" class="back-register" id="backRegister">レジ画面へ戻る</button>
+          </div>
+        </section>
+
+        <section class="closing-dashboard" aria-label="集計サマリー">
+          <div class="closing-metric">
+            <span>レジ元金</span>
+            <strong id="openingCashTotal">¥0</strong>
+          </div>
+          <div class="closing-metric">
+            <span>現金売上</span>
+            <strong id="cashSalesTotal">¥0</strong>
+          </div>
+          <div class="closing-metric">
+            <span>レジ内理論現金</span>
+            <strong id="expectedCashTotal">¥0</strong>
+          </div>
+          <div class="closing-metric">
+            <span>レジ内実現金</span>
+            <strong id="closingCashTotal">¥0</strong>
+          </div>
+          <div class="closing-metric difference">
+            <span>レジ金差額（過不足金）</span>
+            <strong id="cashDifference">¥0</strong>
+          </div>
+        </section>
+
+        <section class="closing-grid">
+          <section class="closing-panel cash-count-panel">
+            <div class="closing-panel-heading">
+              <div>
+                <h3>レジ元金登録</h3>
+                <p>販売開始前の釣銭準備金</p>
+              </div>
+              <span id="openingSavedAt">未登録</span>
+            </div>
+            <div class="cash-count-table" id="openingCashRows"></div>
+            <button type="button" class="closing-save" id="saveOpeningCash">元金を登録</button>
+          </section>
+
+          <section class="closing-panel cash-count-panel">
+            <div class="closing-panel-heading">
+              <div>
+                <h3>レジ締登録</h3>
+                <p>販売終了後、レジ内の実現金を登録</p>
+              </div>
+              <span id="closingSavedAt">未登録</span>
+            </div>
+            <div class="cash-count-table" id="closingCashRows"></div>
+            <button type="button" class="closing-save close" id="saveClosingCash">締めを登録</button>
+          </section>
+
+          <section class="closing-panel sales-panel">
+            <div class="closing-panel-heading">
+              <div>
+                <h3>売上内訳</h3>
+                <p>現時点の会計を集計</p>
+              </div>
+            </div>
+            <div class="sales-breakdown">
+              <div>
+                <span>会計件数</span>
+                <strong id="activeSaleCount">0件</strong>
+              </div>
+              <div>
+                <span>商品点数</span>
+                <strong id="closingItemTotal">0点</strong>
+              </div>
+              <div>
+                <span>現金売上</span>
+                <strong id="cashSalesBreakdown">¥0</strong>
+              </div>
+              <div>
+                <span>クレジットカード</span>
+                <strong id="creditSalesTotal">¥0</strong>
+              </div>
+              <div>
+                <span>電子マネー</span>
+                <strong id="emoneySalesTotal">¥0</strong>
+              </div>
+              <div class="sales-grand">
+                <span>売上合計</span>
+                <strong id="grossSalesTotal">¥0</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="closing-panel summary-panel">
+            <div class="closing-panel-heading">
+              <div>
+                <h3>税区分別売上</h3>
+                <p>8％・10％・非課税</p>
+              </div>
+            </div>
+            <div class="closing-tax-summary" id="closingTaxSummary"></div>
+          </section>
+
+          <section class="closing-panel product-summary-panel">
+            <div class="closing-panel-heading">
+              <div>
+                <h3>商品別数量</h3>
+                <p>本日の物販商品別集計</p>
+              </div>
+            </div>
+            <div class="product-summary-list" id="closingProductSummary"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal-backdrop hidden" id="quantityDialog" role="dialog" aria-modal="true" aria-labelledby="quantityTitle">
+      <section class="keypad-dialog">
+        <div class="dialog-heading">
+          <h2 id="quantityTitle">数量入力</h2>
+          <button type="button" class="dialog-close" id="quantityCancel" aria-label="閉じる">×</button>
+        </div>
+        <div class="cash-count-display quantity-display">
+          <span id="quantityTargetName">商品</span>
+          <strong id="quantityInputValue">0</strong>
+        </div>
+        <div class="cash-count-pad quantity-pad" id="quantityPad" aria-label="数量テンキー">
+          <button type="button" data-quantity-digit="7">7</button>
+          <button type="button" data-quantity-digit="8">8</button>
+          <button type="button" data-quantity-digit="9">9</button>
+          <button type="button" data-quantity-digit="4">4</button>
+          <button type="button" data-quantity-digit="5">5</button>
+          <button type="button" data-quantity-digit="6">6</button>
+          <button type="button" data-quantity-digit="1">1</button>
+          <button type="button" data-quantity-digit="2">2</button>
+          <button type="button" data-quantity-digit="3">3</button>
+          <button type="button" class="clear-key" data-quantity-action="clear">C</button>
+          <button type="button" data-quantity-digit="0">0</button>
+          <button type="button" data-quantity-action="back">⌫</button>
+        </div>
+        <div class="dialog-actions">
+          <button type="button" class="secondary-action" id="quantityClear">クリア</button>
+          <button type="button" class="primary-action" id="quantityApply">決定</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop hidden" id="cashCountDialog" role="dialog" aria-modal="true" aria-labelledby="cashCountTitle">
+      <section class="keypad-dialog">
+        <div class="dialog-heading">
+          <h2 id="cashCountTitle">枚数入力</h2>
+          <button type="button" class="dialog-close" id="cashCountCancel" aria-label="閉じる">×</button>
+        </div>
+        <div class="cash-count-display">
+          <span id="cashCountTargetName">金種</span>
+          <strong id="cashCountInputValue">0</strong>
+        </div>
+        <div class="cash-count-pad" id="cashCountPad" aria-label="枚数テンキー">
+          <button type="button" data-cash-count-digit="7">7</button>
+          <button type="button" data-cash-count-digit="8">8</button>
+          <button type="button" data-cash-count-digit="9">9</button>
+          <button type="button" data-cash-count-digit="4">4</button>
+          <button type="button" data-cash-count-digit="5">5</button>
+          <button type="button" data-cash-count-digit="6">6</button>
+          <button type="button" data-cash-count-digit="1">1</button>
+          <button type="button" data-cash-count-digit="2">2</button>
+          <button type="button" data-cash-count-digit="3">3</button>
+          <button type="button" class="clear-key" data-cash-count-action="clear">C</button>
+          <button type="button" data-cash-count-digit="0">0</button>
+          <button type="button" data-cash-count-action="back">⌫</button>
+        </div>
+        <div class="dialog-actions">
+          <button type="button" class="secondary-action" id="cashCountClear">クリア</button>
+          <button type="button" class="primary-action" id="cashCountApply">決定</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop hidden" id="confirmDialog" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <section class="confirm-dialog">
+        <div class="dialog-heading">
+          <h2 id="confirmTitle">会計確認</h2>
+          <button type="button" class="dialog-close" id="confirmClose" aria-label="閉じる">×</button>
+        </div>
+        <div class="confirm-summary" id="confirmSummary"></div>
+        <div class="confirm-readout settlement-readout">
+          <div class="confirm-metric confirm-total-block">
+            <span>合計</span>
+            <strong id="confirmTotal">¥0</strong>
+          </div>
+          <div class="confirm-metric confirm-payment-block">
+            <span>決済種別</span>
+            <strong id="confirmPayment">現金</strong>
+          </div>
+          <div class="confirm-metric confirm-received-block" id="confirmReceivedBlock">
+            <span>お預り</span>
+            <strong id="confirmReceived">¥0</strong>
+          </div>
+          <div class="confirm-metric confirm-change-block" id="confirmChangeBlock">
+            <span>お釣り</span>
+            <strong id="confirmChange">¥0</strong>
+          </div>
+        </div>
+        <div class="dialog-actions">
+          <button type="button" class="secondary-action" id="confirmBack">戻る</button>
+          <button type="button" class="primary-action" id="confirmSettle">確定する</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop hidden" id="cancelSaleDialog" role="dialog" aria-modal="true" aria-labelledby="cancelSaleTitle">
+      <section class="confirm-dialog">
+        <div class="dialog-heading">
+          <h2 id="cancelSaleTitle">会計取消</h2>
+          <button type="button" class="dialog-close" id="cancelSaleClose" aria-label="閉じる">×</button>
+        </div>
+        <div class="confirm-summary" id="cancelSaleSummary"></div>
+        <div class="cancel-readout">
+          <div class="cancel-metric">
+            <span>会計番号</span>
+            <strong id="cancelSaleNo">No.0200001</strong>
+          </div>
+          <div class="cancel-metric">
+            <span>決済種別</span>
+            <strong id="cancelSalePayment">現金</strong>
+          </div>
+          <div class="cancel-metric refund">
+            <span>返金額</span>
+            <strong id="cancelSaleTotal">¥0</strong>
+          </div>
+          <div class="cancel-metric status">
+            <span>状態</span>
+            <strong id="cancelSaleStatus">返金確認</strong>
+          </div>
+        </div>
+        <div class="cancel-notice" id="cancelSaleNotice">内容を確認してから取消してください。</div>
+        <div class="dialog-actions">
+          <button type="button" class="secondary-action" id="cancelSaleBack">戻る</button>
+          <button type="button" class="primary-action danger-action" id="cancelSaleConfirm">取消する</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop hidden" id="printDialog" role="dialog" aria-modal="true" aria-labelledby="printTitle">
+      <section class="confirm-dialog print-dialog">
+        <div class="dialog-heading">
+          <h2 id="printTitle">帳票発行</h2>
+          <button type="button" class="dialog-close" id="printClose" aria-label="閉じる">×</button>
+        </div>
+        <div class="print-target">
+          <span id="printSaleNo">No.0200001</span>
+          <strong id="printSaleTotal">¥0</strong>
+          <small id="printSaleMeta">現金 / 0点</small>
+        </div>
+        <div class="print-actions">
+          <button type="button" class="print-action receipt" id="printReceipt">レシート発行</button>
+          <button type="button" class="print-action invoice" id="printInvoice">領収書発行</button>
+        </div>
+        <div class="print-output hidden" id="printOutput"></div>
+      </section>
+    </div>
+
+    <div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

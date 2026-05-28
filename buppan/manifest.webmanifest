@@ -1,0 +1,15 @@
+{
+  "name": "物販レジ",
+  "short_name": "物販レジ",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f3f5f2",
+  "theme_color": "#2e3238",
+  "icons": [
+    {
+      "src": "../../temple-register-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
