@@ -63,7 +63,17 @@
                 <strong>バーコード</strong>
                 <small>4桁コード</small>
               </span>
-              <input id="barcodeInput" type="text" inputmode="numeric" autocomplete="off" placeholder="スキャンまたは4桁コード" />
+              <input
+                id="barcodeInput"
+                type="text"
+                inputmode="none"
+                autocomplete="off"
+                enterkeyhint="done"
+                virtualkeyboardpolicy="manual"
+                readonly
+                aria-readonly="true"
+                placeholder="スキャンまたはタップで入力"
+              />
             </label>
             <button type="button" class="scan-button" id="addBarcode">登録</button>
           </div>
@@ -317,6 +327,37 @@
           </section>
         </section>
       </main>
+    </div>
+
+    <div class="modal-backdrop hidden" id="scanCodeDialog" role="dialog" aria-modal="true" aria-labelledby="scanCodeTitle">
+      <section class="keypad-dialog">
+        <div class="dialog-heading">
+          <h2 id="scanCodeTitle">バーコード/4桁コード入力</h2>
+          <button type="button" class="dialog-close" id="scanCodeCancel" aria-label="閉じる">×</button>
+        </div>
+        <div class="cash-count-display scan-code-display">
+          <span>コード</span>
+          <strong id="scanCodeInputValue">0</strong>
+        </div>
+        <div class="cash-count-pad scan-code-pad" id="scanCodePad" aria-label="コード入力テンキー">
+          <button type="button" data-scan-code-digit="7">7</button>
+          <button type="button" data-scan-code-digit="8">8</button>
+          <button type="button" data-scan-code-digit="9">9</button>
+          <button type="button" data-scan-code-digit="4">4</button>
+          <button type="button" data-scan-code-digit="5">5</button>
+          <button type="button" data-scan-code-digit="6">6</button>
+          <button type="button" data-scan-code-digit="1">1</button>
+          <button type="button" data-scan-code-digit="2">2</button>
+          <button type="button" data-scan-code-digit="3">3</button>
+          <button type="button" class="clear-key" data-scan-code-action="clear">C</button>
+          <button type="button" data-scan-code-digit="0">0</button>
+          <button type="button" data-scan-code-action="back">⌫</button>
+        </div>
+        <div class="dialog-actions">
+          <button type="button" class="secondary-action" id="scanCodeClear">クリア</button>
+          <button type="button" class="primary-action" id="scanCodeApply">登録</button>
+        </div>
+      </section>
     </div>
 
     <div class="modal-backdrop hidden" id="quantityDialog" role="dialog" aria-modal="true" aria-labelledby="quantityTitle">

@@ -57,6 +57,7 @@ const state = {
   cashReceived: 0,
   cashlessMethod: "クレジット",
   cashlessApproved: false,
+  scanCodeDraft: "",
   weather: "晴れ",
   history: [],
   nextReceiptNo: 1,
@@ -130,6 +131,12 @@ const saveClosingCash = document.querySelector("#saveClosingCash");
 const printClosingReport = document.querySelector("#printClosingReport");
 const closingTaxSummary = document.querySelector("#closingTaxSummary");
 const closingProductSummary = document.querySelector("#closingProductSummary");
+const scanCodeDialog = document.querySelector("#scanCodeDialog");
+const scanCodeInputValue = document.querySelector("#scanCodeInputValue");
+const scanCodePad = document.querySelector("#scanCodePad");
+const scanCodeApply = document.querySelector("#scanCodeApply");
+const scanCodeCancel = document.querySelector("#scanCodeCancel");
+const scanCodeClear = document.querySelector("#scanCodeClear");
 const quantityDialog = document.querySelector("#quantityDialog");
 const quantityTargetName = document.querySelector("#quantityTargetName");
 const quantityInputValue = document.querySelector("#quantityInputValue");
@@ -334,6 +341,106 @@ function setScannerStatus(message, type = "normal") {
   scannerStatus.dataset.type = type;
 }
 
+function normalizeScanCode(value) {
+  return String(value || "")
+    .replace(/\D/g, "")
+    .slice(0, 13);
+}
+
+function syncScanCode(value) {
+  state.scanCodeDraft = normalizeScanCode(value);
+  barcodeInput.value = state.scanCodeDraft;
+  if (!scanCodeDialog.classList.contains("hidden")) {
+    renderScanCodeDialog();
+  }
+}
+
+function renderScanCodeDialog() {
+  scanCodeInputValue.textContent = state.scanCodeDraft || "0";
+}
+
+function openScanCodePad() {
+  syncScanCode(barcodeInput.value);
+  renderScanCodeDialog();
+  scanCodeDialog.classList.remove("hidden");
+  scanCodeApply.focus();
+}
+
+function closeScanCodePad() {
+  scanCodeDialog.classList.add("hidden");
+}
+
+function appendScanCodeDigit(digit) {
+  syncScanCode(`${state.scanCodeDraft}${digit}`);
+}
+
+function backspaceScanCodeDigit() {
+  syncScanCode(state.scanCodeDraft.slice(0, -1));
+}
+
+function clearScanCode() {
+  syncScanCode("");
+}
+
+function applyScanCodeDraft() {
+  if (!state.scanCodeDraft) {
+    showToast("コードが入力されていません");
+    return;
+  }
+  closeScanCodePad();
+  addScannedProduct();
+}
+
+function hasOpenInputDialog() {
+  return [quantityDialog, cashCountDialog, confirmDialog, cancelSaleDialog, printDialog].some(
+    (dialog) => !dialog.classList.contains("hidden"),
+  );
+}
+
+function handleScanKeyboard(event) {
+  if (event.ctrlKey || event.altKey || event.metaKey) {
+    return false;
+  }
+  const scanDialogOpen = !scanCodeDialog.classList.contains("hidden");
+  if (scanDialogOpen) {
+    if (/^\d$/.test(event.key)) {
+      event.preventDefault();
+      appendScanCodeDigit(event.key);
+      return true;
+    }
+    if (event.key === "Backspace") {
+      event.preventDefault();
+      backspaceScanCodeDigit();
+      return true;
+    }
+    if (event.key === "Enter" || event.key === "Tab") {
+      event.preventDefault();
+      applyScanCodeDraft();
+      return true;
+    }
+    return false;
+  }
+  if (hasOpenInputDialog()) {
+    return false;
+  }
+  if (/^\d$/.test(event.key)) {
+    event.preventDefault();
+    appendScanCodeDigit(event.key);
+    return true;
+  }
+  if (event.key === "Backspace" && state.scanCodeDraft) {
+    event.preventDefault();
+    backspaceScanCodeDigit();
+    return true;
+  }
+  if ((event.key === "Enter" || event.key === "Tab") && state.scanCodeDraft) {
+    event.preventDefault();
+    addScannedProduct();
+    return true;
+  }
+  return false;
+}
+
 function addProduct(product, source = "商品") {
   if (!product) return;
   pushUndo();
@@ -345,7 +452,7 @@ function addProduct(product, source = "商品") {
   }
   state.cashlessApproved = false;
   setScannerStatus(`${source}登録：${product.name}`, "success");
-  barcodeInput.value = "";
+  clearScanCode();
   render();
   barcodeInput.focus();
 }
@@ -356,12 +463,17 @@ function findScannedProduct(value) {
 }
 
 function addScannedProduct() {
-  const rawValue = barcodeInput.value.trim();
-  const product = findScannedProduct(barcodeInput.value);
+  syncScanCode(barcodeInput.value || state.scanCodeDraft);
+  const rawValue = state.scanCodeDraft;
+  const product = findScannedProduct(rawValue);
+  if (!rawValue) {
+    setScannerStatus("コード未入力", "error");
+    showToast("コードが入力されていません");
+    return;
+  }
   if (!product) {
     setScannerStatus("商品が見つかりません", "error");
     showToast("商品が見つかりません");
-    barcodeInput.select();
     return;
   }
   addProduct(product, rawValue.length === 4 ? "短縮コード" : "バーコード");
@@ -941,6 +1053,7 @@ function showClosingScreen() {
   closeConfirm();
   closeCancelSale();
   closePrintDialog();
+  closeScanCodePad();
   closeQuantityPad();
   closeCashCountPad();
   renderClosing();
@@ -950,6 +1063,7 @@ function showRegisterScreen() {
   state.screen = "register";
   closingScreen.classList.add("hidden");
   registerScreen.classList.remove("hidden");
+  closeScanCodePad();
   closeQuantityPad();
   closeCashCountPad();
   closeCancelSale();
@@ -971,12 +1085,7 @@ productGrid.addEventListener("click", (event) => {
 });
 
 addBarcodeButton.addEventListener("click", addScannedProduct);
-barcodeInput.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") {
-    event.preventDefault();
-    addScannedProduct();
-  }
-});
+barcodeInput.addEventListener("click", openScanCodePad);
 
 serviceMode.addEventListener("click", (event) => {
   const button = event.target.closest("[data-service]");
@@ -1128,6 +1237,31 @@ approveCashless.addEventListener("click", () => {
 
 settleButton.addEventListener("click", openConfirm);
 
+scanCodePad.addEventListener("click", (event) => {
+  const digit = event.target.closest("[data-scan-code-digit]");
+  if (digit) {
+    appendScanCodeDigit(digit.dataset.scanCodeDigit);
+    return;
+  }
+  const action = event.target.closest("[data-scan-code-action]");
+  if (!action) return;
+  if (action.dataset.scanCodeAction === "clear") {
+    clearScanCode();
+  }
+  if (action.dataset.scanCodeAction === "back") {
+    backspaceScanCodeDigit();
+  }
+});
+
+scanCodeApply.addEventListener("click", applyScanCodeDraft);
+scanCodeCancel.addEventListener("click", closeScanCodePad);
+scanCodeClear.addEventListener("click", clearScanCode);
+scanCodeDialog.addEventListener("click", (event) => {
+  if (event.target === scanCodeDialog) {
+    closeScanCodePad();
+  }
+});
+
 quantityPad.addEventListener("click", (event) => {
   const digit = event.target.closest("[data-quantity-digit]");
   if (digit) {
@@ -1222,7 +1356,11 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (handleScanKeyboard(event)) {
+    return;
+  }
   if (event.key === "Escape") {
+    closeScanCodePad();
     closeQuantityPad();
     closeCashCountPad();
     closeConfirm();

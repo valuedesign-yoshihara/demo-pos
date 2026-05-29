@@ -1,4 +1,4 @@
-const CACHE_NAME = "temple-retail-register-wuxga-10-1-v6";
+const CACHE_NAME = "temple-retail-register-wuxga-10-1-v7";
 const ASSETS = [
   "./",
   "./index.html",

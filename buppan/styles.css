@@ -425,6 +425,11 @@ p {
   letter-spacing: 0;
 }
 
+.barcode-field input[readonly] {
+  cursor: pointer;
+  caret-color: transparent;
+}
+
 .barcode-field input::placeholder {
   color: #a5aaa9;
 }
@@ -1302,6 +1307,19 @@ p {
   line-height: 1;
   text-align: center;
   font-variant-numeric: tabular-nums;
+}
+
+.scan-code-display strong {
+  min-height: 56px;
+  display: grid;
+  place-items: center;
+  font-size: 48px;
+  overflow-wrap: anywhere;
+}
+
+.scan-code-display span {
+  color: var(--ink);
+  font-size: 20px;
 }
 
 .quantity-display span {
